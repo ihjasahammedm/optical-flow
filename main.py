@@ -4,28 +4,41 @@ import os
 import cv2
 import numpy as np
 import time
-def visualize_flow(image, flow, step=100):
+def visualize_flow(image, flow, threshold=1):
     img = image.copy()
     mag, ang = cv2.cartToPolar(flow[...,0], flow[...,1])
-    xgrid, ygrid = np.meshgrid(np.arange(image.shape[1]), np.arange(image.shape[0]))
-    flowStart = np.stack([xgrid, ygrid])
+    mag_n = cv2.normalize(mag,None,0,255,cv2.NORM_MINMAX)
+    mag_n = mag_n.astype(np.uint8)
+    magNotInf = np.logical_not(np.isinf(mag))
+    magThresholded = mag > threshold
+    magFiltered = np.logical_and(magNotInf, magThresholded)
+#     print(magFiltered.shape)
+    magFilteredIndice = np.where(magFiltered)
+#     print(img.shape)
+#     print(mag.shape)
+#     flowStart = np.stack([xgrid, ygrid])
 #     print(flow_start[:,:10,:10])
 #     print(mag[:10, :10])
 #     print(ang[:10, :10])
-    delta = mag * np.stack([np.cos(ang), np.sin(ang)])
-    flowEnd = flowStart + delta
-    flowEnd = flowEnd.astype(np.int32)
+#     delta = mag * np.stack([np.cos(ang), np.sin(ang)])
+#     flowEnd = flowStart + delta
+#     flowEnd = flowEnd.astype(np.int32)
 #     print(delta.shape)
-    mag_n = mag/(np.max(mag)) 
     # Line thickness of 9 px 
-    thickness = 9
-    for x in range(0, image.shape[1],step):
-        for y in range(0, image.shape[0],step):
-            start = (x, y)
-            print(flowEnd[:, y, x])
-            end = (flowEnd[0,y,x], flowEnd[1,y,x])
-            color = (0, int(mag_n[y,x] * 255), 0)
-            out = cv2.arrowedLine(img, start, end, color, thickness) 
+    thickness = 1
+    tipLength = 0.2
+    if len(magFilteredIndice[0] != 0):
+        for u, v in zip(magFilteredIndice[0], magFilteredIndice[1]) :
+            start = (v, u)
+            delta = mag[u,v] * np.stack([np.cos(ang[u,v]), np.sin(ang[u,v])])
+            delta *= 50
+            end = (int(v + delta[1]), int(u + delta[0]))
+#             print(delta)
+#             print(mag_n[u,v])
+            color = (0, int(mag_n[u,v]), 0)
+            out = cv2.arrowedLine(img, start, end, color, thickness, tipLength=tipLength) 
+    else:
+        out = img
     return out
 
 
@@ -59,7 +72,7 @@ while ret:
             prvsFrame = nextFrameGray
             firstFrame = False
         flow = cv2.calcOpticalFlowFarneback(prvsFrame, nextFrameGray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
-        out = visualize_flow(nextFrame, flow, step = 50)
+        out = visualize_flow(nextFrame, flow)
         output.write(out)
         prvsFrame = nextFrameGray
         windowSize = (720, 512)
