@@ -6,8 +6,6 @@ import cv2
 import numpy as np
 import time
 import flow_vis
-from numpy.core.fromnumeric import around
-
 
 def visualize_flow(image, flow, threshold=1, scale=1, density=0.3):
     """
