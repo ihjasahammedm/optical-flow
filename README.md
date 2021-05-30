@@ -6,7 +6,7 @@ There are mainly two types of optical flow methods:
 1. Sparse Optical Flow : It computes the motion vector for the specific set of objects (for example – detected corners on image). Ex: Pyramid Lucas-Kanade, Sparse RLOF
 2. Dense Optical Flow : Motion is estimated for each pixel in the image. Ex : Dense Pyramid Lucas-Kanade, Farneback, PCAFlow, DeepFlow
 
-## Optical flow visualization 
+### Optical flow visualization 
 Dense optical flow using Farneback is used in this repo, It can be easily modified to use other dense methods as well. Final output video contains two types of visualization placed side by side.  
 1. Flow field visulization as vector arrows 
 2. Flow visualization in HSV color space ([using FlowVis library](https://pypi.org/project/flow-vis/))
@@ -20,12 +20,7 @@ python main.py --input_vid_path 'INPUT_VIDEO_PATH' --output_dir 'OUTPUT_DIRECTOR
 * output_fps (int) [optional] : FPS for output video, default = 5
 
 ### Sample output 
-<figure class="video_container">
-  <video controls="true" allowfullscreen="true" poster="path/to/poster_image.png">
-    <source src="https://github.com/ihjasahammedm/optical-flow/blob/main/video_out/sample1.mp4" type="video/mp4">
-  </video>
-</figure>
-
+![](sample1.gif)
 ### References
 1. https://learnopencv.com/optical-flow-in-opencv/
 2. https://docs.opencv.org/3.4/d4/dee/tutorial_optical_flow.html
