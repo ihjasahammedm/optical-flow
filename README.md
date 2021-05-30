@@ -22,7 +22,7 @@ python main.py --input_vid_path 'INPUT_VIDEO_PATH' --output_dir 'OUTPUT_DIRECTOR
 ### Sample output 
 <figure class="video_container">
   <video controls="true" allowfullscreen="true" poster="path/to/poster_image.png">
-    <source src="video_out/sample1.mp4" type="video/mp4">
+    <source src="https://github.com/ihjasahammedm/optical-flow/blob/main/video_out/sample1.mp4" type="video/mp4">
   </video>
 </figure>
 
