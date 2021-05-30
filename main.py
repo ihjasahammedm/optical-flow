@@ -13,7 +13,7 @@ def visualize_flow(image, flow, threshold=1, scale=1, density=0.3):
     Method used to visulize the flow vectors
     Args:
     image (numpy array) : image frame
-    flow  (numpy array) : dense flow output from optical flow method
+    flow  (numpy array) : dense flow output from optical flow 
     threshold (int)     : flow with a value greater than threshold only will be visualized 
     scale (int)         : actual magnitude of flow can be scaled with this factor for better visualization
     density (float)     : make the flows sparse with this argument. Accepted values : 0 to 1
@@ -32,7 +32,7 @@ def visualize_flow(image, flow, threshold=1, scale=1, density=0.3):
     n_filtered = len(magFilteredIndice[0])
     # set thickness and tip length of flow arrows
     thickness = 5
-    tipLength = 0.5
+    tipLength = 0.3
     # number of samples to be selected randomly from the filtered flow samples
     # random sampling without replacement is done with the flow magnitude as weight
     n_samples = int(density * n_filtered)
@@ -42,7 +42,6 @@ def visualize_flow(image, flow, threshold=1, scale=1, density=0.3):
         probability = mag[magFilteredIndice]
         probability = probability / np.sum(probability)
         sampled_indices = np.random.choice(n_filtered, n_samples, p=probability)
-        print(len(sampled_indices))
 
         for sample in sampled_indices:
             # draw the flow vector
@@ -61,8 +60,6 @@ vidPath = './videos/sample2.mp4'
 cap = cv2.VideoCapture(vidPath)
 ret = True
 displayFps = 50
-firstFrame = True
-frameCount = 1
 frameTotal = cap.get(cv2.CAP_PROP_FRAME_COUNT)
 
 tStart = time.time()
@@ -80,16 +77,19 @@ height = 720
 output = cv2.VideoWriter(outPath, fourcc, outFPS, (width, height))
 # window size for displaying output
 windowSize = (width, height)
-
+# read first frame 
+ret, firstFrame = cap.read()
+prvsFrame = cv2.cvtColor(firstFrame, cv2.COLOR_BGR2GRAY)
+frameCount = 1
+# motion will be estimated from second frame onwards
 while ret:
     ret, rawImg = cap.read()
     if ret:
+        frameCount += 1
         print(f'Processing frame number {frameCount}/{frameTotal}')
         nextFrame = cv2.cvtColor(rawImg, cv2.COLOR_BGR2RGB)
-        nextFrameGray = cv2.cvtColor(nextFrame, cv2.COLOR_BGR2GRAY)
-        if firstFrame:
-            prvsFrame = nextFrameGray
-            firstFrame = False
+        nextFrameGray = cv2.cvtColor(nextFrame, cv2.COLOR_RGB2GRAY)
+        # calculate flow
         flow = cv2.calcOpticalFlowFarneback(prvsFrame, nextFrameGray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
         # visualize flow as vectors
         arrowVis = visualize_flow(nextFrame, flow, threshold=5, scale=10, density=0.01)
@@ -103,7 +103,6 @@ while ret:
         cv2.waitKey(int(1000/displayFps))
         tElapsed = time.time() - tStart
         print(f'Avg FPS:{frameCount/tElapsed}')
-        frameCount += 1
 output.release()
 cap.release()
 cv2.destroyAllWindows()
