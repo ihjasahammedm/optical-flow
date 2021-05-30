@@ -1,6 +1,7 @@
 # Author : Ihjas Ahammed M
 # License : MIT
 import os
+import argparse
 import cv2
 import numpy as np
 import time
@@ -65,61 +66,69 @@ def visualize_flow(image, flow, threshold=1, scale=1, density=0.3):
         out = img
     return out
 
+def main(args):
+    vidPath = args.input_vid_path
+    cap = cv2.VideoCapture(vidPath)
+    ret = True
+    displayFps = 50
+    frameTotal = cap.get(cv2.CAP_PROP_FRAME_COUNT)
 
-vidPath = './videos/sample2.mp4'
-cap = cv2.VideoCapture(vidPath)
-ret = True
-displayFps = 50
-frameTotal = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+    tStart = time.time()
 
-tStart = time.time()
+    # output config
+    outFileName = os.path.splitext(os.path.basename(vidPath))[0] + '.mp4'
+    outDir = args.output_dir
+    outFPS = args.output_fps
+    outPath = os.path.join(outDir, outFileName)
+    os.makedirs(outDir, exist_ok=True)
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    # output width and height
+    width = 1080
+    height = 720
+    output = cv2.VideoWriter(outPath, fourcc, outFPS, (width, height))
+    # window size for displaying output
+    windowSize = (width, height)
+    # read first frame
+    ret, firstFrame = cap.read()
+    prvsFrame = cv2.cvtColor(firstFrame, cv2.COLOR_BGR2GRAY)
+    frameCount = 1
+    # motion will be estimated from second frame onwards
+    while ret:
+        ret, rawImg = cap.read()
+        if ret:
+            frameCount += 1
+            print(f'Processing frame number {frameCount}/{frameTotal}')
+            nextFrame = cv2.cvtColor(rawImg, cv2.COLOR_BGR2RGB)
+            nextFrameGray = cv2.cvtColor(nextFrame, cv2.COLOR_RGB2GRAY)
+            # calculate flow
+            flow = cv2.calcOpticalFlowFarneback(
+                prvsFrame, nextFrameGray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
+            # visualize flow as vectors
+            arrowVis = visualize_flow(
+                nextFrame,
+                flow,
+                threshold=5,
+                scale=10,
+                density=0.01)
+            # visualize flow in HSV color space
+            hsvVis = flow_vis.flow_to_color(flow, convert_to_bgr=False)
+            out = np.hstack((arrowVis, hsvVis))
+            prvsFrame = nextFrameGray
+            resizedImg = cv2.resize(out, windowSize)
+            output.write(resizedImg)
+            cv2.imshow('Video', resizedImg)
+            cv2.waitKey(int(1000 / displayFps))
+            tElapsed = time.time() - tStart
+            print(f'Avg FPS processed:{frameCount/tElapsed}')
+    output.release()
+    cap.release()
+    cv2.destroyAllWindows()
+    print('Finished')
 
-# output config
-outFileName = os.path.splitext(os.path.basename(vidPath))[0] + '.mp4'
-outDir = './video_out'
-outFPS = 5
-outPath = os.path.join(outDir, outFileName)
-os.makedirs(outDir, exist_ok=True)
-fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-# output width and height
-width = 1080
-height = 720
-output = cv2.VideoWriter(outPath, fourcc, outFPS, (width, height))
-# window size for displaying output
-windowSize = (width, height)
-# read first frame
-ret, firstFrame = cap.read()
-prvsFrame = cv2.cvtColor(firstFrame, cv2.COLOR_BGR2GRAY)
-frameCount = 1
-# motion will be estimated from second frame onwards
-while ret:
-    ret, rawImg = cap.read()
-    if ret:
-        frameCount += 1
-        print(f'Processing frame number {frameCount}/{frameTotal}')
-        nextFrame = cv2.cvtColor(rawImg, cv2.COLOR_BGR2RGB)
-        nextFrameGray = cv2.cvtColor(nextFrame, cv2.COLOR_RGB2GRAY)
-        # calculate flow
-        flow = cv2.calcOpticalFlowFarneback(
-            prvsFrame, nextFrameGray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
-        # visualize flow as vectors
-        arrowVis = visualize_flow(
-            nextFrame,
-            flow,
-            threshold=5,
-            scale=10,
-            density=0.01)
-        # visualize flow in HSV color space
-        hsvVis = flow_vis.flow_to_color(flow, convert_to_bgr=False)
-        out = np.hstack((arrowVis, hsvVis))
-        prvsFrame = nextFrameGray
-        resizedImg = cv2.resize(out, windowSize)
-        output.write(resizedImg)
-        cv2.imshow('Video', resizedImg)
-        cv2.waitKey(int(1000 / displayFps))
-        tElapsed = time.time() - tStart
-        print(f'Avg FPS:{frameCount/tElapsed}')
-output.release()
-cap.release()
-cv2.destroyAllWindows()
-print('Finished')
+if __name__ == "__main__":
+    arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument('--input_vid_path', type= str, help= 'Path to the video to be processed')
+    arg_parser.add_argument('--output_dir', required=False, type= str, help= 'Directory in which output will be saved', default='./video_out')
+    arg_parser.add_argument('--output_fps', required=False, type= int, help= 'Output video FPS', default= 5)
+    args = arg_parser.parse_args()
+    main(args)
